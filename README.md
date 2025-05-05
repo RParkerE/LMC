@@ -27,7 +27,7 @@ Key features:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/LMC.git
+git clone https://github.com/RParkerE/LMC.git
 cd LMC
 
 # Install dependencies

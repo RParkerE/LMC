@@ -30,45 +30,56 @@ def extract_sections(text: str) -> List[Tuple[str, str]]:
     Returns:
         List of (section_header, section_text) tuples
     """
+    if not isinstance(text, str) or not text.strip():
+        return []
+        
     # Common section headers in clinical notes
     section_patterns = [
-        r'(?i)(?:^|\n)([A-Z][A-Za-z\s]+):',
-        r'(?i)(?:^|\n)([A-Z][A-Za-z\s]+)\n',
-        r'(?i)(?:^|\n)([A-Z][A-Za-z\s]+)\s*[-–—]',
+        r'(?:^|\n)([A-Z][A-Za-z\s]+):',
+        r'(?:^|\n)([A-Z][A-Za-z\s]+)\n',
+        r'(?:^|\n)([A-Z][A-Za-z\s]+)\s*[-–—]',
     ]
     
-    # Combine patterns
-    pattern = '|'.join(f'({p})' for p in section_patterns)
+    # Combine patterns with case-insensitive flag
+    pattern = '(?i)' + '|'.join(f'({p})' for p in section_patterns)
     
     # Find all section headers
     matches = list(re.finditer(pattern, text))
     
     if not matches:
         # If no sections found, treat entire text as one section
-        return [('MAIN', text)]
+        return [('MAIN', text.strip())]
     
     # Extract sections
     sections = []
     for i in range(len(matches)):
-        start = matches[i].start()
-        end = matches[i+1].start() if i < len(matches)-1 else len(text)
-        
-        # Get section header
-        header = matches[i].group(1).strip()
-        if not header:
-            # Try other capture groups
-            for j in range(2, len(matches[i].groups())+1):
-                if matches[i].group(j):
-                    header = matches[i].group(j).strip()
-                    break
-        
-        # Get section text
-        section_text = text[start:end].strip()
-        
-        # Remove header from text
-        section_text = re.sub(f'^{re.escape(header)}[:\\s-]*', '', section_text).strip()
-        
-        sections.append((header, section_text))
+        try:
+            start = matches[i].start()
+            end = matches[i+1].start() if i < len(matches)-1 else len(text)
+            
+            # Get section header
+            header = matches[i].group(1).strip() if matches[i].group(1) else None
+            if not header:
+                # Try other capture groups
+                for j in range(2, len(matches[i].groups())+1):
+                    if matches[i].group(j):
+                        header = matches[i].group(j).strip()
+                        break
+            
+            if not header:
+                continue
+                
+            # Get section text
+            section_text = text[start:end].strip()
+            
+            # Remove header from text
+            section_text = re.sub(f'^{re.escape(header)}[:\\s-]*', '', section_text).strip()
+            
+            if section_text:  # Only add non-empty sections
+                sections.append((header, section_text))
+        except Exception as e:
+            logging.warning(f"Error extracting section: {str(e)}")
+            continue
     
     return sections
 
@@ -83,56 +94,94 @@ def process_mimic_notes(input_path: str, output_path: str):
     # Create output directory
     os.makedirs(output_path, exist_ok=True)
     
-    # Read notes
+    # Read notes with explicit dtype specification
     logging.info("Reading MIMIC-III notes...")
-    notes_df = pd.read_csv(input_path)
+    notes_df = pd.read_csv(
+        input_path, 
+        encoding='utf-8',
+        low_memory=False,
+        dtype={
+            'ROW_ID': 'Int64',
+            'SUBJECT_ID': 'Int64',
+            'HADM_ID': 'Int64',
+            'CHARTDATE': 'str',
+            'CHARTTIME': 'str',
+            'STORETIME': 'str',
+            'CATEGORY': 'str',
+            'DESCRIPTION': 'str',
+            'CGID': 'str',
+            'ISERROR': 'str',
+            'TEXT': 'str'
+        }
+    )
+    
+    # Drop rows where TEXT or CATEGORY is null
+    notes_df = notes_df.dropna(subset=['TEXT', 'CATEGORY'])
     
     # Process each note
     processed_data = []
     for _, row in tqdm(notes_df.iterrows(), total=len(notes_df), desc="Processing notes"):
-        note_id = row['ROW_ID']
-        text = row['TEXT']
-        note_type = row['CATEGORY']
-        
-        # Extract sections
-        sections = extract_sections(text)
-        
-        # Create examples for each section
-        for header, section_text in sections:
-            # Split into sentences
-            sentences = re.split(r'[.!?]+', section_text)
-            sentences = [s.strip() for s in sentences if s.strip()]
+        try:
+            note_id = row['ROW_ID']
+            text = row['TEXT']
+            note_type = row['CATEGORY']
             
-            # Create examples
-            for i, sentence in enumerate(sentences):
-                words = sentence.split()
-                if len(words) < 3:  # Skip very short sentences
-                    continue
-                
-                # Create context windows
-                for j in range(len(words)):
-                    # Get context window
-                    start = max(0, j - 5)
-                    end = min(len(words), j + 6)
-                    context = words[start:j] + words[j+1:end]
-                    
-                    if not context:  # Skip if no context
+            # Skip empty notes
+            if not isinstance(text, str) or not text.strip():
+                continue
+            
+            # Extract sections
+            sections = extract_sections(text)
+            if not sections:
+                continue
+            
+            # Create examples for each section
+            for header, section_text in sections:
+                try:
+                    # Skip empty sections
+                    if not section_text or not isinstance(section_text, str) or not section_text.strip():
                         continue
                     
-                    # Create example
-                    example = {
-                        'note_id': note_id,
-                        'note_type': note_type,
-                        'section_header': header,
-                        'word': words[j],
-                        'context': context
-                    }
-                    processed_data.append(example)
+                    # Split into sentences
+                    sentences = re.split(r'[.!?]+', section_text)
+                    sentences = [s.strip() for s in sentences if s and isinstance(s, str) and s.strip()]
+                    
+                    # Create examples
+                    for i, sentence in enumerate(sentences):
+                        words = sentence.split()
+                        if len(words) < 3:  # Skip very short sentences
+                            continue
+                        
+                        # Create context windows
+                        for j in range(len(words)):
+                            # Get context window
+                            start = max(0, j - 5)
+                            end = min(len(words), j + 6)
+                            context = words[start:j] + words[j+1:end]
+                            
+                            if not context:  # Skip if no context
+                                continue
+                            
+                            # Create example
+                            example = {
+                                'note_id': note_id,
+                                'note_type': note_type,
+                                'section_header': header,
+                                'word': words[j],
+                                'context': context
+                            }
+                            processed_data.append(example)
+                except Exception as e:
+                    logging.warning(f"Error processing section in note {note_id}: {str(e)}")
+                    continue
+        except Exception as e:
+            logging.warning(f"Error processing note {note_id}: {str(e)}")
+            continue
     
     # Save processed data
     logging.info("Saving processed data...")
     output_file = os.path.join(output_path, 'processed_notes.json')
-    with open(output_file, 'w') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(processed_data, f, indent=2)
     
     logging.info(f"Processed {len(processed_data)} examples")

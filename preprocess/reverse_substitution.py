@@ -23,22 +23,29 @@ def setup_logging(log_dir):
 
 def load_acronym_mapping(mapping_path: str) -> Dict[str, List[str]]:
     """
-    Load acronym mapping from CASI dataset.
+    Load acronym mapping from CASI dataset text file.
     
     Args:
-        mapping_path: Path to CASI dataset CSV file
+        mapping_path: Path to CASI dataset text file
     
     Returns:
         Dictionary mapping short forms to possible long forms
     """
-    df = pd.read_csv(mapping_path)
     mapping = defaultdict(list)
     
-    for _, row in df.iterrows():
-        sf = row['Short Form'].lower()
-        lf = row['Long Form'].lower()
-        if sf not in mapping[sf]:
-            mapping[sf].append(lf)
+    with open(mapping_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            # Skip empty lines
+            if not line.strip():
+                continue
+                
+            # Split line into components
+            parts = line.strip().split('\t')
+            if len(parts) >= 2:
+                sf = parts[0].lower()
+                lf = parts[1].lower()
+                if sf not in mapping[sf]:
+                    mapping[sf].append(lf)
     
     return dict(mapping)
 
@@ -193,7 +200,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_path', type=str, required=True,
                       help='Path to MIMIC-III NOTEEVENTS.csv')
     parser.add_argument('--mapping_path', type=str, required=True,
-                      help='Path to CASI dataset CSV file')
+                      help='Path to CASI dataset text file')
     parser.add_argument('--output_path', type=str, required=True,
                       help='Directory to save processed data')
     parser.add_argument('--log_dir', type=str, default='logs',
