@@ -1,0 +1,10 @@
+2025-05-06 01:46:51,662 - INFO - Starting evaluation with args: Namespace(test_path='data/processed', model_path='models/best_model.pt', output_path='results', log_dir='logs', batch_size=32, num_workers=4)
+2025-05-06 01:46:51,662 - INFO - Using device: cpu
+2025-05-06 01:47:20,476 - INFO - Starting evaluation with args: Namespace(test_path='data/processed', model_path='models/best_model.pt', output_path='results', log_dir='logs', batch_size=32, num_workers=4)
+2025-05-06 01:47:20,476 - INFO - Using device: cpu
+2025-05-06 01:47:50,228 - INFO - Starting evaluation with args: Namespace(test_path='data/processed', model_path='models/best_model.pt', output_path='results', log_dir='logs', batch_size=32, num_workers=4)
+2025-05-06 01:47:50,229 - INFO - Using device: cpu
+2025-05-06 01:48:01,310 - INFO - Evaluation results:
+2025-05-06 01:48:01,311 - INFO - loss: 3.4755
+2025-05-06 01:48:01,311 - INFO - reconstruction_loss: 3.3906
+2025-05-06 01:48:01,311 - INFO - kl_loss: 0.0849

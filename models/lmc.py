@@ -111,6 +111,13 @@ class LMC(nn.Module):
         
         # Reconstruct context words
         logits = self.output_proj(z)  # [batch_size, vocab_size]
+        
+        # Reshape logits and target_words for cross entropy
+        batch_size = logits.size(0)
+        logits = logits.unsqueeze(1).expand(-1, target_words.size(1), -1)  # [batch_size, seq_len, vocab_size]
+        logits = logits.reshape(-1, logits.size(-1))  # [batch_size*seq_len, vocab_size]
+        target_words = target_words.reshape(-1)  # [batch_size*seq_len]
+        
         reconstruction_loss = F.cross_entropy(logits, target_words)
         
         # Total loss

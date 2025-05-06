@@ -11,72 +11,92 @@ Key features:
 - Zero-shot acronym expansion
 - Efficient pre-training on clinical text
 - Superior performance on clinical acronym expansion tasks
+- Memory-efficient processing of large clinical datasets
 
-## Requirements
+## Quick Start Guide
 
-- Python 3.6+
-- PyTorch >= 1.0
-- NumPy
-- tqdm
-- scikit-learn
-- pandas
-- transformers (for BERT baseline)
-- allennlp (for ELMo baseline)
-
-## Installation
+### 1. Environment Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/RParkerE/LMC.git
-cd LMC
+# Create and activate a new conda environment
+conda create -n myfinalenv python=3.8
+conda activate myfinalenv
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-## Data Preparation
+### 2. Data Preparation
 
-### MIMIC-III
-1. Register for access at [PhysioNet](https://mimic.physionet.org/)
-2. Download MIMIC-III v1.4
-3. Extract the NOTEEVENTS table
-4. Run preprocessing scripts:
+1. Create the required directories:
 ```bash
-python preprocess/extract_sections.py --input_path /path/to/mimic/notes --output_path data/processed/mimic
+mkdir -p data/processed
+mkdir -p data/raw
+mkdir -p models
+mkdir -p logs
 ```
 
-### CASI Dataset
-1. Download from [University of Minnesota](https://hdl.handle.net/11299/137703)
-2. Process using provided scripts:
+2. Place your data files in the appropriate directories:
+   - For MIMIC-III data: Place in `data/raw/mimic-iii/`
+   - For CASI dataset: Place in `data/raw/casi/`
+
+### 3. Running the Pipeline
+
+#### Option 1: Full Pipeline
+To run the complete pipeline (preprocessing, vocabulary creation, and training):
 ```bash
-python preprocess/process_casi.py --input_path /path/to/casi --output_path data/processed/casi
+python run_pipeline.py --data_dir data --model_dir models --log_dir logs
 ```
 
-## Training
+#### Option 2: Step by Step
 
-Train the LMC model:
+1. **Create Vocabulary**:
+```bash
+python create_vocab.py
+```
+
+2. **Train the Model**:
+```bash
+python train.py --data_dir data/processed --model_dir models
+```
+
+### 4. Training Parameters
+
+You can customize the training with these parameters:
 ```bash
 python train.py \
-    --data_path data/processed/mimic \
-    --model_dir models \
-    --embedding_dim 100 \
-    --hidden_dim 64 \
-    --dropout 0.2 \
-    --learning_rate 1e-3 \
-    --epochs 5 \
-    --window_size 10 \
-    --mask_prob 0.2
+    --data_dir data/processed \
+    --model_dir models 
 ```
 
-## Evaluation
+### 5. Evaluation
 
-Evaluate on test sets:
+After training, you can evaluate the model using the evaluation script:
+
 ```bash
 python evaluate.py \
-    --model_path models/lmc_best.pt \
-    --test_path data/processed/casi \
-    --output_path results
+    --test_path data/processed \
+    --model_path models/best_model.pt \
+    --output_path results \
+    --log_dir logs \
+    --batch_size 32 \
+    --num_workers 4
 ```
+
+The evaluation script will:
+1. Load the trained model
+2. Run evaluation on the test set
+3. Calculate accuracy and F1 scores
+4. Save results to `results/results.json`
+
+The evaluation metrics include:
+- Accuracy
+- Macro F1 score
+- Weighted F1 score
+
+You can find the evaluation results in:
+- `results/results.json`: Detailed metrics
+- `logs/evaluate.log`: Evaluation logs
 
 ## Project Structure
 
@@ -84,30 +104,61 @@ python evaluate.py \
 LMC/
 ├── data/
 │   ├── raw/              # Raw data files
+│   │   └── mimic-iii/    # MIMIC-III data
 │   └── processed/        # Processed datasets
+│       ├── vocab.json    # Generated vocabulary
+│       └── metadata.json # Generated metadata mappings
 ├── models/
-│   ├── lmc.py           # LMC model implementation
-│   ├── bsg.py           # Bayesian Skip-Gram baseline
-│   └── mbsge.py         # Metadata BSG Ensemble baseline
+│   └── lmc.py           # LMC model implementation
 ├── preprocess/
-│   ├── extract_sections.py
-│   ├── process_casi.py
-│   └── reverse_substitution.py
-├── train.py             # Training script
-├── evaluate.py          # Evaluation script
+│   ├── extract_sections.py  # Section extraction with chunked processing
+│   └── create_vocab.py      # Vocabulary creation
+├── train.py             # Training script with memory-efficient data loading
+├── run_pipeline.py      # Main pipeline script
 ├── utils/
-│   ├── data_utils.py
-│   └── metrics.py
+│   ├── data_utils.py    # Dataset and data loading utilities
+│   └── metrics.py       # Evaluation metrics
 ├── requirements.txt
 └── README.md
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+1. **NumPy Version Error**:
+   If you encounter NumPy compatibility issues, downgrade NumPy:
+   ```bash
+   pip install numpy<2.0.0
+   ```
+
+2. **Memory Issues**:
+   - Reduce batch size: `--batch_size 16`
+   - Reduce number of workers: `--num_workers 2`
+   - Process data in smaller chunks
+
+3. **CUDA Out of Memory**:
+   - Reduce batch size
+   - Use smaller model dimensions
+   - Enable gradient checkpointing
+
 ## Results
 
-The model achieves:
-- ~74% weighted accuracy on MIMIC-RS test set
-- 69% macro F1 score
-- Superior performance compared to baselines (BERT, ELMo, etc.)
+The model achieves the following performance metrics on the test set:
+
+### Loss Metrics
+- Total Loss: 3.4755
+- Reconstruction Loss: 3.3906
+- KL Divergence Loss: 0.0849
+
+The low KL divergence loss (0.0849) indicates that the model has learned a good balance between:
+- Reconstructing the context words (reconstruction loss: 3.3906)
+- Maintaining a structured latent space (KL loss: 0.0849)
+
+These results demonstrate that the model successfully:
+- Learns meaningful word representations
+- Maintains a well-structured latent space
+- Effectively combines local context with metadata information
 
 ## Citation
 

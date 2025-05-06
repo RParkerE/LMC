@@ -1,0 +1,15 @@
+2025-05-05 16:36:59,598 - INFO - Starting LMC pipeline
+2025-05-05 16:36:59,598 - INFO - Step 1: Processing MIMIC-III notes
+2025-05-05 16:36:59,598 - INFO - Running Section extraction...
+2025-05-05 16:40:20,115 - INFO - Starting LMC pipeline
+2025-05-05 16:40:20,115 - INFO - Found input file: data\raw/mimic-iii/NOTEEVENTS.csv
+2025-05-05 16:40:20,115 - INFO - File size: 3.73 GB
+2025-05-05 16:40:20,115 - INFO - Step 1: Processing MIMIC-III notes
+2025-05-05 16:40:20,115 - INFO - Running Section extraction...
+2025-05-05 16:40:20,115 - INFO - Command: python preprocess/extract_sections.py --input_path data\raw/mimic-iii/NOTEEVENTS.csv --output_path data\processed/sections --log_dir logs --chunk_size 10000
+2025-05-05 16:42:03,348 - INFO - Starting LMC pipeline
+2025-05-05 16:42:03,351 - INFO - Found input file: data\raw/mimic-iii/NOTEEVENTS.csv
+2025-05-05 16:42:03,351 - INFO - File size: 3.73 GB
+2025-05-05 16:42:03,351 - INFO - Step 1: Processing MIMIC-III notes
+2025-05-05 16:42:03,351 - INFO - Running Section extraction...
+2025-05-05 16:42:03,351 - INFO - Command: python preprocess/extract_sections.py --input_path data\raw/mimic-iii/NOTEEVENTS.csv --output_path data\processed/sections --log_dir logs --chunk_size 10000

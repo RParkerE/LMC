@@ -3,6 +3,7 @@ import os
 import subprocess
 import logging
 from pathlib import Path
+import time
 
 def setup_logging(log_dir):
     if not os.path.exists(log_dir):
@@ -20,19 +21,44 @@ def setup_logging(log_dir):
 def run_command(command, description):
     """Run a shell command and log its output."""
     logging.info(f"Running {description}...")
+    logging.info(f"Command: {command}")
+    
     try:
-        result = subprocess.run(
+        # Use subprocess.Popen to capture output in real-time
+        process = subprocess.Popen(
             command,
             shell=True,
-            check=True,
-            capture_output=True,
-            text=True
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
         )
-        logging.info(f"{description} completed successfully")
-        if result.stdout:
-            logging.info(f"Output:\n{result.stdout}")
+        
+        # Read output in real-time
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                logging.info(output.strip())
+        
+        # Get return code
+        return_code = process.poll()
+        
+        if return_code == 0:
+            logging.info(f"{description} completed successfully")
+        else:
+            # Get error output
+            error_output = process.stderr.read()
+            logging.error(f"{description} failed with error:\n{error_output}")
+            raise subprocess.CalledProcessError(return_code, command)
+            
     except subprocess.CalledProcessError as e:
         logging.error(f"{description} failed with error:\n{e.stderr}")
+        raise
+    except Exception as e:
+        logging.error(f"Unexpected error in {description}: {str(e)}")
         raise
 
 def main(args):
@@ -44,118 +70,88 @@ def main(args):
     os.makedirs(args.model_dir, exist_ok=True)
     os.makedirs(args.log_dir, exist_ok=True)
     
+    # Verify input file exists
+    input_path = os.path.join(args.data_dir, 'raw/mimic-iii/NOTEEVENTS.csv')
+    if not os.path.exists(input_path):
+        logging.error(f"Input file not found: {input_path}")
+        return
+    
+    logging.info(f"Found input file: {input_path}")
+    logging.info(f"File size: {os.path.getsize(input_path) / (1024*1024*1024):.2f} GB")
+    
     # Step 1: Process MIMIC-III notes
     logging.info("Step 1: Processing MIMIC-III notes")
-    run_command(
-        f"python preprocess/extract_sections.py "
-        f"--input_path {args.mimic_path} "
-        f"--output_path {os.path.join(args.data_dir, 'mimic')} "
-        f"--log_dir {args.log_dir}",
-        "MIMIC-III processing"
-    )
+    start_time = time.time()
     
-    # Step 2: Process CASI dataset
-    logging.info("Step 2: Processing CASI dataset")
-    run_command(
-        f"python preprocess/process_casi.py "
-        f"--input_path {args.casi_path} "
-        f"--output_path {os.path.join(args.data_dir, 'casi')} "
-        f"--log_dir {args.log_dir}",
-        "CASI processing"
-    )
+    try:
+        run_command(
+            f"python preprocess/extract_sections.py "
+            f"--input_path {input_path} "
+            f"--output_path {os.path.join(args.data_dir, 'processed/sections')} "
+            f"--log_dir {args.log_dir} "
+            f"--chunk_size 10000",
+            "Section extraction"
+        )
+        logging.info(f"Section extraction completed in {time.time() - start_time:.2f} seconds")
+    except Exception as e:
+        logging.error(f"Section extraction failed: {str(e)}")
+        return
     
-    # Step 3: Generate synthetic data
-    logging.info("Step 3: Generating synthetic data")
-    run_command(
-        f"python preprocess/reverse_substitution.py "
-        f"--input_path {args.mimic_path} "
-        f"--mapping_path {args.casi_path} "
-        f"--output_path {os.path.join(args.data_dir, 'synthetic')} "
-        f"--log_dir {args.log_dir}",
-        "Synthetic data generation"
-    )
+    # Step 2: Create vocabulary and metadata
+    logging.info("Step 2: Creating vocabulary and metadata")
+    start_time = time.time()
     
-    # Step 4: Train LMC model
-    logging.info("Step 4: Training LMC model")
-    run_command(
-        f"python train.py "
-        f"--data_path {os.path.join(args.data_dir, 'mimic')} "
-        f"--model_dir {args.model_dir} "
-        f"--log_dir {args.log_dir} "
-        f"--embedding_dim {args.embedding_dim} "
-        f"--hidden_dim {args.hidden_dim} "
-        f"--dropout {args.dropout} "
-        f"--batch_size {args.batch_size} "
-        f"--learning_rate {args.learning_rate} "
-        f"--epochs {args.epochs} "
-        f"--mask_prob {args.mask_prob} "
-        f"--num_workers {args.num_workers}",
-        "Model training"
-    )
+    try:
+        run_command(
+            f"python preprocess/create_vocab.py "
+            f"--input_dir {os.path.join(args.data_dir, 'processed/sections')} "
+            f"--output_dir {os.path.join(args.data_dir, 'processed')} "
+            f"--log_dir {args.log_dir}",
+            "Vocabulary creation"
+        )
+        logging.info(f"Vocabulary creation completed in {time.time() - start_time:.2f} seconds")
+    except Exception as e:
+        logging.error(f"Vocabulary creation failed: {str(e)}")
+        return
     
-    # Step 5: Evaluate on test sets
-    logging.info("Step 5: Evaluating model")
+    # Step 3: Train model
+    logging.info("Step 3: Training model")
+    start_time = time.time()
     
-    # Evaluate on CASI
-    run_command(
-        f"python evaluate.py "
-        f"--test_path {os.path.join(args.data_dir, 'casi')} "
-        f"--model_path {os.path.join(args.model_dir, 'best_model.pt')} "
-        f"--output_path {os.path.join(args.model_dir, 'results_casi')} "
-        f"--log_dir {args.log_dir} "
-        f"--batch_size {args.batch_size} "
-        f"--num_workers {args.num_workers}",
-        "CASI evaluation"
-    )
-    
-    # Evaluate on synthetic data
-    run_command(
-        f"python evaluate.py "
-        f"--test_path {os.path.join(args.data_dir, 'synthetic')} "
-        f"--model_path {os.path.join(args.model_dir, 'best_model.pt')} "
-        f"--output_path {os.path.join(args.model_dir, 'results_synthetic')} "
-        f"--log_dir {args.log_dir} "
-        f"--batch_size {args.batch_size} "
-        f"--num_workers {args.num_workers}",
-        "Synthetic data evaluation"
-    )
+    try:
+        run_command(
+            f"python train.py "
+            f"--data_dir {os.path.join(args.data_dir, 'processed')} "
+            f"--model_dir {args.model_dir} "
+            f"--log_dir {args.log_dir} "
+            f"--batch_size 32 "
+            f"--num_workers 4 "
+            f"--window_size 10 "
+            f"--embedding_dim 256 "
+            f"--hidden_dim 512 "
+            f"--num_layers 2 "
+            f"--dropout 0.1 "
+            f"--num_epochs 10 "
+            f"--learning_rate 0.001 "
+            f"--mask_prob 0.2",
+            "Model training"
+        )
+        logging.info(f"Model training completed in {time.time() - start_time:.2f} seconds")
+    except Exception as e:
+        logging.error(f"Model training failed: {str(e)}")
+        return
     
     logging.info("Pipeline completed successfully")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     
-    # Data paths
-    parser.add_argument('--mimic_path', type=str, required=True,
-                      help='Path to MIMIC-III NOTEEVENTS.csv')
-    parser.add_argument('--casi_path', type=str, required=True,
-                      help='Path to CASI dataset CSV file')
-    parser.add_argument('--data_dir', type=str, default='data',
-                      help='Directory for processed data')
-    parser.add_argument('--model_dir', type=str, default='models',
-                      help='Directory for model checkpoints')
+    parser.add_argument('--data_dir', type=str, required=True,
+                      help='Root directory for data')
+    parser.add_argument('--model_dir', type=str, required=True,
+                      help='Directory to save models')
     parser.add_argument('--log_dir', type=str, default='logs',
-                      help='Directory for logs')
-    
-    # Model parameters
-    parser.add_argument('--embedding_dim', type=int, default=100,
-                      help='Dimension of word and metadata embeddings')
-    parser.add_argument('--hidden_dim', type=int, default=64,
-                      help='Dimension of hidden layers')
-    parser.add_argument('--dropout', type=float, default=0.2,
-                      help='Dropout probability')
-    
-    # Training parameters
-    parser.add_argument('--batch_size', type=int, default=32,
-                      help='Batch size for training and evaluation')
-    parser.add_argument('--learning_rate', type=float, default=1e-3,
-                      help='Learning rate')
-    parser.add_argument('--epochs', type=int, default=5,
-                      help='Number of training epochs')
-    parser.add_argument('--mask_prob', type=float, default=0.2,
-                      help='Probability of masking words during training')
-    parser.add_argument('--num_workers', type=int, default=4,
-                      help='Number of workers for data loading')
+                      help='Directory to save logs')
     
     args = parser.parse_args()
     

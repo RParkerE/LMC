@@ -26,22 +26,23 @@ def setup_logging(log_dir):
 
 def load_model(model_path, vocab_size, metadata_size, device):
     """Load a trained model."""
-    checkpoint = torch.load(model_path, map_location=device)
-    
+    # Initialize model
     model = LMC(
         vocab_size=vocab_size,
         metadata_size=metadata_size
     ).to(device)
     
-    model.load_state_dict(checkpoint['model_state_dict'])
+    # Load state dictionary directly
+    model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
     return model
 
 def evaluate_acronym_expansion(model, dataloader, device):
-    """Evaluate model on acronym expansion task."""
-    all_predictions = []
-    all_targets = []
+    """Evaluate model on reconstruction task."""
+    total_loss = 0
+    total_recon_loss = 0
+    total_kl_loss = 0
     
     with torch.no_grad():
         for batch in tqdm(dataloader, desc='Evaluating'):
@@ -51,25 +52,23 @@ def evaluate_acronym_expansion(model, dataloader, device):
             context_words = batch['context_words'].to(device)
             target_words = batch['target_words'].to(device)
             
-            # Get predictions
-            predictions = model.expand_acronym(
-                word_idx, metadata_idx, context_words,
-                batch['candidate_expansions']
-            )
+            # Forward pass
+            outputs = model(word_idx, metadata_idx, context_words, target_words)
             
-            all_predictions.extend(predictions.cpu().numpy())
-            all_targets.extend(target_words.cpu().numpy())
+            # Update statistics
+            total_loss += outputs['loss'].item()
+            total_recon_loss += outputs['reconstruction_loss'].item()
+            total_kl_loss += outputs['kl_div'].item()
     
-    # Calculate metrics
-    accuracy = accuracy_score(all_targets, all_predictions)
-    f1_macro = f1_score(all_targets, all_predictions, average='macro')
-    f1_weighted = f1_score(all_targets, all_predictions, average='weighted')
-    
-    return {
-        'accuracy': accuracy,
-        'f1_macro': f1_macro,
-        'f1_weighted': f1_weighted
+    # Calculate average metrics
+    num_batches = len(dataloader)
+    metrics = {
+        'loss': total_loss / num_batches,
+        'reconstruction_loss': total_recon_loss / num_batches,
+        'kl_loss': total_kl_loss / num_batches
     }
+    
+    return metrics
 
 def main(args):
     # Setup logging

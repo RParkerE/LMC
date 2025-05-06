@@ -4,6 +4,7 @@ import json
 import os
 import numpy as np
 from typing import Dict, List, Tuple
+import glob
 
 class ClinicalDataset(Dataset):
     def __init__(self, data_path: str, split: str = 'train', window_size: int = 10):
@@ -34,9 +35,34 @@ class ClinicalDataset(Dataset):
     
     def _load_data(self) -> List[Dict]:
         """Load the data for the specified split."""
-        data_file = os.path.join(self.data_path, f'{self.split}.json')
-        with open(data_file, 'r') as f:
-            return json.load(f)
+        # First try CASI data
+        casi_file = os.path.join(self.data_path, 'casi', f'{self.split}.json')
+        if os.path.exists(casi_file):
+            with open(casi_file, 'r') as f:
+                return json.load(f)
+        
+        # If CASI data not found, try MIMIC-III chunks
+        mimic_dir = os.path.join(self.data_path, 'sections')
+        if os.path.exists(mimic_dir):
+            chunk_files = sorted(glob.glob(os.path.join(mimic_dir, f'processed_notes_chunk_*.json')))
+            if chunk_files:
+                # For validation and test, use a subset of chunks
+                if self.split == 'val':
+                    chunk_files = chunk_files[:len(chunk_files)//10]  # Use 10% of chunks for validation
+                elif self.split == 'test':
+                    chunk_files = chunk_files[len(chunk_files)//10:len(chunk_files)//5]  # Use next 10% for test
+                else:  # train
+                    chunk_files = chunk_files[len(chunk_files)//5:]  # Use remaining 80% for training
+                
+                # Load data from chunks
+                data = []
+                for chunk_file in chunk_files:
+                    with open(chunk_file, 'r') as f:
+                        chunk_data = json.load(f)
+                        data.extend(chunk_data)
+                return data
+        
+        raise FileNotFoundError(f"No data found for split '{self.split}' in {self.data_path}")
     
     def __len__(self) -> int:
         return len(self.data)
@@ -55,8 +81,8 @@ class ClinicalDataset(Dataset):
         example = self.data[idx]
         
         # Convert words to indices
-        word_idx = self.vocab.get(example['word'], self.vocab['<UNK>'])
-        metadata_idx = self.metadata.get(example['metadata'], self.metadata['<UNK>'])
+        word_idx = self.vocab.get(example['acronym'], self.vocab['<UNK>'])
+        metadata_idx = self.metadata.get(example['section_header'], self.metadata['<UNK>'])
         
         # Get context words
         context_words = []

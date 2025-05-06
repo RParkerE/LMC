@@ -1,0 +1,84 @@
+2025-05-05 22:09:28,420 - INFO - Starting training
+2025-05-05 22:09:28,420 - INFO - Using device: cpu
+2025-05-05 22:09:28,420 - INFO - Loading datasets...
+2025-05-05 23:10:46,888 - INFO - Starting training
+2025-05-05 23:10:46,892 - INFO - Using device: cpu
+2025-05-05 23:10:46,892 - INFO - Loading datasets...
+2025-05-05 23:11:55,303 - INFO - Starting training
+2025-05-05 23:11:55,306 - INFO - Using device: cpu
+2025-05-05 23:11:55,307 - INFO - Loading datasets...
+2025-05-05 23:12:53,472 - INFO - Starting training
+2025-05-05 23:12:53,475 - INFO - Using device: cpu
+2025-05-05 23:12:53,475 - INFO - Loading datasets...
+2025-05-05 23:12:55,374 - INFO - Epoch 1/10
+2025-05-05 23:15:43,769 - INFO - Starting training
+2025-05-05 23:15:43,769 - INFO - Using device: cpu
+2025-05-05 23:15:43,770 - INFO - Loading datasets...
+2025-05-05 23:17:43,036 - INFO - Starting training
+2025-05-05 23:17:43,037 - INFO - Using device: cpu
+2025-05-05 23:17:43,037 - INFO - Loading datasets...
+2025-05-05 23:17:44,906 - INFO - Epoch 1/10
+2025-05-05 23:18:14,918 - INFO - Starting training
+2025-05-05 23:18:14,919 - INFO - Using device: cpu
+2025-05-05 23:18:14,919 - INFO - Loading datasets...
+2025-05-05 23:18:16,787 - INFO - Epoch 1/10
+2025-05-05 23:27:57,441 - INFO - Train Loss: 4.2905, Recon Loss: 4.1967, KL Loss: 0.0938
+2025-05-05 23:28:04,178 - INFO - Val Loss: 4.0311, Recon Loss: 4.0172, KL Loss: 0.0139
+2025-05-05 23:28:04,687 - INFO - Saved best model
+2025-05-05 23:28:04,687 - INFO - Epoch 2/10
+2025-05-05 23:37:42,203 - INFO - Train Loss: 4.0233, Recon Loss: 3.9762, KL Loss: 0.0471
+2025-05-05 23:37:48,987 - INFO - Val Loss: 3.8960, Recon Loss: 3.8632, KL Loss: 0.0329
+2025-05-05 23:37:49,492 - INFO - Saved best model
+2025-05-05 23:37:49,492 - INFO - Epoch 3/10
+2025-05-05 23:47:47,796 - INFO - Train Loss: 3.8825, Recon Loss: 3.8245, KL Loss: 0.0580
+2025-05-05 23:47:54,624 - INFO - Val Loss: 3.8187, Recon Loss: 3.7792, KL Loss: 0.0395
+2025-05-05 23:47:55,144 - INFO - Saved best model
+2025-05-05 23:47:55,144 - INFO - Epoch 4/10
+2025-05-05 23:56:22,065 - INFO - Starting training
+2025-05-05 23:56:22,068 - INFO - Using device: cpu
+2025-05-05 23:56:22,068 - INFO - Loading datasets...
+2025-05-05 23:56:24,153 - INFO - Epoch 1/10
+2025-05-06 00:05:12,260 - INFO - Train Loss: 4.2720, Recon Loss: 4.1780, KL Loss: 0.0940
+2025-05-06 00:05:19,427 - INFO - Val Loss: 4.0232, Recon Loss: 4.0066, KL Loss: 0.0166
+2025-05-06 00:05:19,948 - INFO - Saved best model
+2025-05-06 00:05:19,948 - INFO - Epoch 2/10
+2025-05-06 00:13:56,927 - INFO - Train Loss: 4.0134, Recon Loss: 3.9594, KL Loss: 0.0541
+2025-05-06 00:14:03,835 - INFO - Val Loss: 3.8850, Recon Loss: 3.8447, KL Loss: 0.0403
+2025-05-06 00:14:04,369 - INFO - Saved best model
+2025-05-06 00:14:04,370 - INFO - Epoch 3/10
+2025-05-06 00:22:42,210 - INFO - Train Loss: 3.8580, Recon Loss: 3.7903, KL Loss: 0.0677
+2025-05-06 00:22:49,119 - INFO - Val Loss: 3.7669, Recon Loss: 3.7160, KL Loss: 0.0509
+2025-05-06 00:22:49,639 - INFO - Saved best model
+2025-05-06 00:22:49,639 - INFO - Epoch 4/10
+2025-05-06 00:31:25,419 - INFO - Train Loss: 3.7519, Recon Loss: 3.6726, KL Loss: 0.0792
+2025-05-06 00:31:32,253 - INFO - Val Loss: 3.6820, Recon Loss: 3.6230, KL Loss: 0.0590
+2025-05-06 00:31:32,757 - INFO - Saved best model
+2025-05-06 00:31:32,757 - INFO - Epoch 5/10
+2025-05-06 00:40:06,100 - INFO - Train Loss: 3.6795, Recon Loss: 3.5932, KL Loss: 0.0863
+2025-05-06 00:40:12,907 - INFO - Val Loss: 3.6275, Recon Loss: 3.5624, KL Loss: 0.0651
+2025-05-06 00:40:13,418 - INFO - Saved best model
+2025-05-06 00:40:13,418 - INFO - Epoch 6/10
+2025-05-06 00:48:46,875 - INFO - Train Loss: 3.6300, Recon Loss: 3.5392, KL Loss: 0.0908
+2025-05-06 00:48:53,674 - INFO - Val Loss: 3.5865, Recon Loss: 3.5153, KL Loss: 0.0712
+2025-05-06 00:48:54,176 - INFO - Saved best model
+2025-05-06 00:48:54,176 - INFO - Epoch 7/10
+2025-05-06 00:57:26,960 - INFO - Train Loss: 3.5984, Recon Loss: 3.5057, KL Loss: 0.0927
+2025-05-06 00:57:33,760 - INFO - Val Loss: 3.5672, Recon Loss: 3.4956, KL Loss: 0.0715
+2025-05-06 00:57:34,458 - INFO - Saved best model
+2025-05-06 00:57:34,458 - INFO - Epoch 8/10
+2025-05-06 01:11:29,586 - INFO - Train Loss: 3.5744, Recon Loss: 3.4792, KL Loss: 0.0952
+2025-05-06 01:11:36,712 - INFO - Val Loss: 3.5410, Recon Loss: 3.4647, KL Loss: 0.0763
+2025-05-06 01:11:37,276 - INFO - Saved best model
+2025-05-06 01:11:37,276 - INFO - Epoch 9/10
+2025-05-06 01:20:10,937 - INFO - Train Loss: 3.5500, Recon Loss: 3.4528, KL Loss: 0.0971
+2025-05-06 01:20:17,728 - INFO - Val Loss: 3.5217, Recon Loss: 3.4438, KL Loss: 0.0780
+2025-05-06 01:20:18,260 - INFO - Saved best model
+2025-05-06 01:20:18,261 - INFO - Epoch 10/10
+2025-05-06 01:28:48,982 - INFO - Train Loss: 3.5275, Recon Loss: 3.4279, KL Loss: 0.0996
+2025-05-06 01:28:55,784 - INFO - Val Loss: 3.5013, Recon Loss: 3.4162, KL Loss: 0.0851
+2025-05-06 01:28:56,285 - INFO - Saved best model
+2025-05-06 01:28:56,285 - INFO - Training completed
+2025-05-06 01:49:07,818 - INFO - Starting training
+2025-05-06 01:49:07,818 - INFO - Using device: cpu
+2025-05-06 01:49:07,819 - INFO - Loading datasets...
+2025-05-06 01:49:09,698 - INFO - Epoch 1/1000
